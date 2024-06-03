@@ -2,7 +2,7 @@
 %This script can be used to simulate a robotic arm on a spacecraft that has
 %to follow a pre-planned trajectory. The system is controlled via PD
 %controler
-%Michele Ambrosino 06/03/2024
+%Michele Ambrosino 07/03/2024
 
 clc,close all, clear all
 
