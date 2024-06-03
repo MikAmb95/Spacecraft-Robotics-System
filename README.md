@@ -17,7 +17,7 @@ $\phi_c(t), \theta_c(t), \psi_c(t)$.
 
 The generalized coordinates of the robotic arm are 
 ```math
-$q^\top_r(t) = \begin{bmatrix}q_1(t),...,q_{nr}(t) \end{bmatrix}$ 
+q^\top_r(t) = \begin{bmatrix}q_1(t),...,q_{nr}(t) \end{bmatrix}$ 
 ```
 where $nr$ is the number of DoFs (or joints) of the arm.
 The equation of the dynamics of the Spacecraft Manipulator can be expressed as
@@ -56,5 +56,6 @@ poly_traj.m = this script is the same function of the jtraj that is in the Robot
 print_system_config.m = animation to print the motion of the system.
 
 ## How to use these scripts
-
 Lunch before etc etc
+
+## References
