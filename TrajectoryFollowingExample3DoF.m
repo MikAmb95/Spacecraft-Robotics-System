@@ -1,53 +1,70 @@
 
-%This script can be used to simulate a robotic arm on a spacecraft that has
-%to follow a pre-planned trajectory. The system is controlled via PD
-%controler
-%Michele Ambrosino 07/03/2024
+%This script can be used to simulate a 3Dof robotic arm on a spacecraft. 
+%Trajectory: pre-planned polynomial trajectory. 
+%Controller: The system is controlled via PD controllers.
 
-clc,close all, clear all
+%Michele Ambrosino 06/03/2024
 
-load('param.mat')
+% To be sure that our environment is clean before starting the code
+clearvars
+clc,close all  
 
-x0 = zeros(6,1); %initial position
+load('param.mat') %load system dynamic paramters
 
-th_d = deg2rad(10); %desired angular base value
-r_d = [0.5 0.5]'; %desired x-y displacement base
-qm_d = [5;5;5]*pi/180; %desired robot koints configuration 
+%System Description here
+
+%% System Settings + Control Design
+nx = 6; %dimension of the system state (position)
+x0 = zeros(nx,1); %vector for initial position
+dx0 = zeros(nx,1); %vector for initial velocity
+xc = [x0;dx0]; %%initial position and velocity for simulations
+X_sol = []; %% vector to store the results
+U_sol =[]; %vector to store the input
 
 %Control Gain
 Kp = 10*diag([100;100;1e3;1e3;1e3;1e3]); %Proportional 
 Kd = diag([5;5;50;50;50;50]); %Derivative
 
+%% Trajectory Planning Definition
+th_d = deg2rad(10); %desired angular base value [rad]
+r_d = [0.5 0.5]'; %desired x-y displacement base [m]
+qm_d = deg2rad([5;5;5]); %desired robot koints configuration [rad];
+Ts = 1e-2; %samplig time trajectory [s]
+tEnd = 5; %duration of each sub-trajectory [s]
+tEnd_f = 3*tEnd; %Concatenation of the three trajectory [s]
 
 % In this example, the trajectory is designed in different steps
-Ts = 1e-2; %samplig time trajectory 
-tt1 = [0:Ts:5]; %Fist duration
-ind = size(tt1,2);
-tt = [0:Ts:15]; %Second duration
-ind2 = size(tt,2);
+sub_time_vector = [0:Ts:tEnd]; %Each sub-trajectory is planned for tEnd seconds
+ind = size(sub_time_vector,2); %dimension of sub-trajectory
+tSpan = [0:Ts:tEnd_f]; %The full trajectory is tEnd_f [s]
+ind2 = size(tSpan,2); %dimension of full-trajectory
 
-%Trajectory planning wiht polynomial interpolation
-
-thd = zeros(ind2,1);
+%Here we build the three desidered trajectory
+%First we move theta for tEnd then we keep it constant for the rest
+%Second we move the base x-y from tEnd to 2*tEnd
+%Third we move the robotic arm from 2*tEnd tp tEnd_f
+thd = zeros(ind2,1); 
 rd = zeros(ind2,size(r_d,1));
 qd = zeros(ind2,size(qm_d,1));
-[th,~,~] = jtraj(x0(1),th_d,tt1); %%% desired trajectory for the angular position of the base
+
+%theta traejctory  (the poly_traj is the same function that is present in
+%the Robotic Toolboox by P.Corke, to avoid to install the toolbox you can
+%use the custom poly_traj.m
+[th,~,~] = poly_traj(x0(1),th_d,sub_time_vector); %%% desired trajectory for the angular position of the base
 thd(1:ind,1) = th; thd(ind+1:end,1) = th(end,1);
-[r,~,~] = jtraj(x0(1:2),r_d,tt1); %%% desired trajectory for the x-y displacements of the base
+%x-y trajectory
+[r,~,~] = poly_traj(x0(1:2),r_d,sub_time_vector); %%% desired trajectory for the x-y displacements of the base
 rd(ind-1:2*(ind-1),:) = r; rd(2*(ind-1)+1:end,:) = ones(ind,1)*r(end,:);
-[q,~,~] = jtraj(x0(4:6),qm_d,tt1); %%% desired trajectory fot the robot joints
+%robot joint trajectory
+[q,~,~] = poly_traj(x0(4:6),qm_d,sub_time_vector); %%% desired trajectory fot the robot joints
 qd(1:2*ind-2,:) = ones(2*ind-2,1)*q(1,:) ; qd(2*ind-1:end,:) = q;
 
 
-xc = [x0;x0]; %%initial position and velocity for simulations
-X_sol = []; %% vector to store the results
 
-%for simulations
-
-tic
-for i = 1:size(tt,2)
+%% Simulation start 
+for i = 1:ind2
     
-    i
+    disp("Iteration: "+i+" / "+ind2)
     %control PD function 
     tau = PD_control_scheme(xc,[rd(i,:)';thd(i,:);qd(i,:)'],Kp,Kd);
     
@@ -57,33 +74,61 @@ for i = 1:size(tt,2)
     %update initial condition
     xc = x(end,:)';
     %store results
+    U_sol = [U_sol;tau'];
     X_sol = [X_sol;xc'];
 end
-toc
 
-%plot results
-figure(1)
-plot(tt,X_sol(:,3),tt,thd);xlabel('time[s]');ylabel('\theta')
+%% Print Plot Results
+printRes = false;
 
-figure(2)
-plot(tt,X_sol(:,1:2),tt,rd);xlabel('time[s]');ylabel('x-y')
+if printRes
+    lW = 2.5; %LineWidth
+    fS = 18;  %FontSize
+    figure(1)
+    subplot(3,1,1); plot(tSpan,X_sol(:,3),tSpan,thd,'LineWidth',lW); legend('\theta','\theta_{r}','Orientation','horizontal','Location','best')
+    title('position states')
+    ylabel('\theta'); grid on; set(gca,'fontsize', fS)
+    
+    subplot(3,1,2); plot(tSpan,X_sol(:,1:2),tSpan,rd,'LineWidth',lW);legend('x','y','x_{r}','y_{r}','Orientation','horizontal','Location','best')
+    ylabel('x-y'); grid on; set(gca,'fontsize', fS)
+    
+    subplot(3,1,3); plot(tSpan,X_sol(:,4:6),tSpan,qd,'LineWidth',lW); legend('q_1','q_2','q_2','q_{r1}','q_{r2}','q_{r3}','Orientation','horizontal','Location','best')
+    xlabel('time[s]');ylabel('q1-q2'); grid on; set(gca,'fontsize', fS)
+    
+    figure(2)
+    subplot(3,1,1); plot(tSpan,U_sol(:,3),'LineWidth',lW); 
+    title('control input')
+    ylabel('u_{\theta}'); grid on; set(gca,'fontsize', fS)
+    
+    subplot(3,1,2); plot(tSpan,U_sol(:,1:2),'LineWidth',lW);
+    ylabel('u_{x-y}'); grid on; set(gca,'fontsize', fS)
+    
+    subplot(3,1,3); plot(tSpan,U_sol(:,4:6),'LineWidth',lW); 
+    xlabel('time[s]');ylabel('u_{q1-q2}'); grid on; set(gca,'fontsize', fS)
+  
+    
+end
 
-figure(3)
-plot(tt,X_sol(:,4:6),tt,qd);xlabel('time[s]');ylabel('qr1-qr2')
+%% Print Animation
+printAnimation = true;
+
+if printAnimation
+    
+    print_system_config
+    
+end
 
 
-print_system_config
 
 
-
+%this is the PD function
+%input: x:state system [pos;vel]; ref:reference trajectory; 
+%Kp:proportional gain; Kd: damping gain
+%output: tau: torque vector
 function tau = PD_control_scheme(x,ref,Kp,Kd)
 
-
 tau(1:2,1) = Kp(1:2,1:2)*(ref(1:2)-x(1:2))-Kd(1:2,1:2)*x(7:8); %PD for the angular position of the base
-
 tau(3,1) = Kp(3,3)*(ref(3)-x(3))-Kd(3,3)*x(9); %PD for the angular position of the base
-
-
 tau(4:6,1) = Kp(4:6,4:6)*(ref(4:6)-x(4:6))-Kd(4:6,4:6)*x(10:12); %PD for the angular position of the base
 
 
