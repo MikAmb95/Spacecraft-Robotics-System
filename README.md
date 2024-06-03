@@ -1,6 +1,10 @@
 # Spacecraft-Robotics-System
 This folder contains matlab material to simulate a spacecraft equipped with a 3DoF robotic arm.
 
+## Model Introduction
+
+$x+5$
+
 ## List of file in this folder
 param_dyn.m = definition of the dynamic parameters. (this script will generate the param.mat)
 
