@@ -11,7 +11,8 @@ clc,close all
 
 load('param.mat') %load system dynamic paramters
 
-%System Description here
+%System Description:
+% the robotic system has 6 position (x,y,psi) for the chaser and (q1,q2,q3) robot joints. 
 
 %% System Settings + Control Design
 nx = 6; %dimension of the system state (position)
