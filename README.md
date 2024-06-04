@@ -43,6 +43,24 @@ For a 3DoFs robotic arm mounted on a spacecraft base, the generalized coordinate
         q_1(t),q_2(t),q_3(t)
     \end{bmatrix}^\top.
 ```
+### Trajectory Planning and Control Design ###
+
+**Trajectory Planning**. The trajectories to be executed are pre-planned using an assigned initial condition and a desired reference. A quintic (5th order) polynomial is used to obtain the desired trajectory. In this example we plan five different trajectories for each of the states (position) of the system.
+
+```math
+    q_{c,r(t)} = \begin{bmatrix}
+        x_{c,r}(t),y_{c,r}(t),\psi_{c,r}(t)
+    \end{bmatrix}^\top, \quad q_{r,r}(t) = \begin{bmatrix}
+        q_{1,r}(t),q_{3,r}(t),q_{3,r}(t)
+    \end{bmatrix}^\top.
+```
+
+**Control Design.** We use a Proportional-Derivative (PD) controller to drive each state (position) to the desired referece. Note that this is not the best approach to perform trajectory tracking but can help to familiarize with the dynamic model of system. Each of the five PD can be expressed in the form:
+
+```math
+ u = K_p (x_d - x) - K_d\dot{x} ,
+```
+where $K_p$ is the proportional gain, $K_d$ is the derivative gain, $x_d$ is the desired reference (i.e $x_{c,r}(t),y_{c,r}(t),\psi_{c,r}(t),q_{1,r}(t),q_{3,r}(t),q_{3,r}(t)$ ), $x$ is the current measured state (e.g $x_c(t),y_c(t),\psi_c(t),q_1(t),q_3(t),q_r(t)$ ), and $\dot{x}$ the current velocity. 
 
 ## List of file in this folder
 param_dyn.m = definition of the dynamic parameters. (this script will generate the param.mat)
@@ -56,6 +74,8 @@ poly_traj.m = this script is the same function of the jtraj that is in the Robot
 print_system_config.m = animation to print the motion of the system.
 
 ## How to use these scripts
-Lunch before etc etc
+
+**First Step.** Using the script param_dyn.m to define the dynamic paraments. This script will generate the param.mat file
+**Second Step.** Using the script TrajectoryFollowingExample3DoF.m to perform the simululation (NOTE: the results and the animation can be enabled or disabled using appropriate flags in the script).
 
 ## References
